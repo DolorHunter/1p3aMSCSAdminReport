@@ -10,7 +10,8 @@ cookie = '__cfduid=df5c329fc009c62e45bef0cfadcfb3d311598103315; 4Oaf_61d6_saltke
 user_agent = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36'
 dir_url = 'https://www.1point3acres.com/bbs/forum.php?mod=forumdisplay&fid=82&sortid=164&searchoption[3001][value]=1&searchoption[3001][type]=radio&searchoption[3002][value]=1&searchoption[3002][type]=radio&sortid=164&filter=sortid&orderby=dateline'
 base_url = 'https://www.1point3acres.com/bbs/'
-filename = '../data/ans.csv'
+filename = '../data/ans.xls'
+sleep = False
 
 
 # login with cookies
@@ -102,8 +103,8 @@ def get_apply_data(post_url):
         apply_info = ['申入学年度:', '入学学期:', '专业:', '具体项目名称:', '学位:', '全奖/自费:', '提交时间:', '申请结果:',
                       '学校名称:', '通知时间:', '本科学校名称:', '本科学校档次:', '本科专业:', '本科成绩和算法，排名:',
                       '研究生学校名称:', '研究生学校档次:', '研究生专业:', '研究生成绩和算法，排名:', 'T单项和总分:',
-                      'G单项和总分:', '背景的其他说明（如牛推等）:', '个人其他信息:', '结果学校国家、地区:', '查到status的方式:', '备注:']
-        apply_line = ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
+                      'G单项和总分:', 'sub专业和分数:', '背景的其他说明（如牛推等）:', '个人其他信息:', '结果学校国家、地区:', '查到status的方式:', '备注:']
+        apply_line = ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
         mark = soup.find('td', class_='t_f')
         mark = "".join(mark.strings)
         mark = mark.strip()
@@ -142,20 +143,21 @@ def get_apply_data(post_url):
         return apply_line
 
 
-def create_csv(filename):
+def create_xls(filename):
     new_line = ['标题:', '帖子地址:', '作者:', '作者主页地址:', '申入学年度:', '入学学期:', '专业:', '具体项目名称:', '学位:',
                 '全奖/自费:', '提交时间:', '申请结果:', '学校名称:', '通知时间:', '本科学校名称:', '本科学校档次:',
                 '本科专业:', '本科成绩和算法，排名:', '研究生学校名称:', '研究生学校档次:', '研究生专业:', '研究生成绩和算法，排名:',
-                'T单项和总分:', 'G单项和总分:', '背景的其他说明（如牛推等）:', '个人其他信息:', '结果学校国家、地区:', '查到status的方式:', '备注:']
+                'T单项和总分:', 'G单项和总分:', 'sub专业和分数:', '背景的其他说明（如牛推等）:', '个人其他信息:', '结果学校国家、地区:', 
+                '查到status的方式:', '备注:']
     wb = xlwt.Workbook()
     sheet1 = wb.add_sheet('Sheet 1')
     for i in range(len(new_line)):
         sheet1.write(0, i, new_line[i])
     wb.save(filename)
-    print('*INFO: CSV file has created.')
+    print('*INFO: xls file has created.')
 
 
-def write_csv_append(filename, new_line):
+def write_xls_append(filename, new_line):
     workbook = xlrd.open_workbook(filename)
     sheets = workbook.sheet_names()
     worksheet = workbook.sheet_by_name(sheets[0])
@@ -172,7 +174,7 @@ def main():
     cur_page = 0
     next_page = cur_page + 1
     max_page = 65535
-    create_csv(filename)
+    create_xls(filename)
     while cur_page < max_page:
         page = get_page_data(dir_url + '&page=' + str(next_page))
         cur_page = int(page[0][1][0])
@@ -181,10 +183,12 @@ def main():
         for post in page[1][1:]:
             apply_info = get_apply_data(post[1])
             ans = (post + apply_info)
-            write_csv_append(filename, ans)
-            time.sleep(1)
+            write_xls_append(filename, ans)
+            if sleep == True:
+                time.sleep(1)
         print('*INFO: Append new page. CurPage:' + str(cur_page))
-        time.sleep(5)
+        if sleep == True:
+            time.sleep(5)
     print('************************************************************')
     print('*INFO: Web Crawler has done crawling. CurPage:' + str(cur_page), 'MaxPage:' + str(max_page))
 
