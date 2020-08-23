@@ -184,10 +184,10 @@ def main():
             apply_info = get_apply_data(post[1])
             ans = (post + apply_info)
             write_xls_append(filename, ans)
-            if sleep == True:
+            if sleep:
                 time.sleep(1)
         print('*INFO: Append new page. CurPage:' + str(cur_page))
-        if sleep == True:
+        if sleep:
             time.sleep(5)
     print('************************************************************')
     print('*INFO: Web Crawler has done crawling. CurPage:' + str(cur_page), 'MaxPage:' + str(max_page))

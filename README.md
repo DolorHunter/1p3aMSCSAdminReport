@@ -21,7 +21,7 @@ $ pip install regex, requests, BeautifulSoup4, xlutils
 
 ## 如何使用
 
-修改 /src/web_crawler.py 下的 `cookie` 和 `dir_url`(如果你想使用不同的过滤器).
+修改 /src/web_crawler.py 下的 `cookie` 和 `dir_url`(如果你想使用MSCS外的条件).
 
 - 怎么获得Cookie:
   - Chrome: F12进入网络(Network)分页, 重新登录论坛, 查看名为 bbs/ 的请求的请求头(Request Header), 请求头内的 Cookie 即为你的 cookie, 替换全局变量 cookie 即可.
@@ -29,10 +29,10 @@ $ pip install regex, requests, BeautifulSoup4, xlutils
 
 - 怎么获得 dir_url:
   - 进入 [论坛›留学申请›录取汇报：研究生](https://www.1point3acres.com/bbs/forum-82-1.html)
-  - (可选)调整筛选器/过滤器
+  - (可选)调整筛选条件/过滤器
   - 进入非第一页的页面, 获得一个以 **&page=n** 结尾的链接
   - 去掉此结尾并替换全局变量 dir_url 即可.
 
 ## 警告
 
-爬虫可能会触发网站的 bot 检测. 如果不幸触发请手动进入 https://www.1point3acres.com/bbs/ 进行 reCAPTCHA验证. 在未使用 sleep 的情况下大约爬取一两百个帖子会触发一次, 使用了 sleep 后似乎也不会有所提升?
+爬虫可能会触发网站的 bot 检测. 如果不幸触发请手动进入 https://www.1point3acres.com/bbs/ 进行 reCAPTCHA验证. 在未使用 sleep 的情况下大约爬取一两百个帖子会触发一次, 使用了 sleep 后似乎也不会有所提升? 因此默认 sleep 参数为 False.
