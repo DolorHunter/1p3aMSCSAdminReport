@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup as bs
 import xlrd
 import xlwt
 from xlutils.copy import copy
+import time
 
 cookie = '__cfduid=df5c329fc009c62e45bef0cfadcfb3d311598103315; 4Oaf_61d6_saltkey=GkK5JZSW; 4Oaf_61d6_lastvisit=1598099715; 4Oaf_61d6_sendmail=1; _ga=GA1.2.255742118.1598103321; _gid=GA1.2.657097761.1598103321; _gat=1; 4Oaf_61d6_cookie_hash=498d9c937b305355f346c584acd8e0bf; __gads=ID=9bbd87e9f19d5ee1:T=1598103321:S=ALNI_MYd9SMC1CGCUnFroeReshlJkv0daQ; _gat_gtag_UA_167278674_1=1; 4Oaf_61d6_lastact=1598103368%09member.php%09logging; 4Oaf_61d6_ulastactivity=1598103368%7C0; 4Oaf_61d6_auth=1edbCNcMM8nx%2BthjxqKMBwDPazTRd0Ns%2BcZU5XsoA5nl8NIhzGyL%2BJ5w08wb4voZBfgLXm1W9lLtiC1qMMMQVcQr2Vk; 4Oaf_61d6_lastcheckfeed=469652%7C1598103368; 4Oaf_61d6_checkfollow=1; 4Oaf_61d6_lip=199.19.110.43%2C1598103368'
 user_agent = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36'
@@ -101,8 +102,8 @@ def get_apply_data(post_url):
         apply_info = ['申入学年度:', '入学学期:', '专业:', '具体项目名称:', '学位:', '全奖/自费:', '提交时间:', '申请结果:',
                       '学校名称:', '通知时间:', '本科学校名称:', '本科学校档次:', '本科专业:', '本科成绩和算法，排名:',
                       '研究生学校名称:', '研究生学校档次:', '研究生专业:', '研究生成绩和算法，排名:', 'T单项和总分:',
-                      'G单项和总分:', '背景的其他说明（如牛推等）:', '结果学校国家、地区:', '查到status的方式:', '备注:']
-        apply_line = ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
+                      'G单项和总分:', '背景的其他说明（如牛推等）:', '个人其他信息:', '结果学校国家、地区:', '查到status的方式:', '备注:']
+        apply_line = ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
         mark = soup.find('td', class_='t_f')
         mark = "".join(mark.strings)
         mark = mark.strip()
@@ -117,10 +118,7 @@ def get_apply_data(post_url):
             index = get_index(apply_info, th)
 
             td = tr.find('td')
-            if td.find('a', onclick=True) is None:
-                td = "".join(td.contents)
-                apply_line[index] = td
-            else:
+            if td.find('a', onclick=True):
                 td = td.find('a', onclick=True)
                 td = td['onclick']
                 start = td.find('forum.php?')
@@ -133,6 +131,14 @@ def get_apply_data(post_url):
                     td = soup.find('root')
                     td = "".join(td.contents)
                     apply_line[index] = td
+            elif td.find('a', href=True):
+                td = td.find('a', href=True)
+                td = td['href']
+                apply_line[index] = td
+            else:
+                td = "".join(td.contents)
+                apply_line[index] = td
+
         return apply_line
 
 
@@ -140,7 +146,7 @@ def create_csv(filename):
     new_line = ['标题:', '帖子地址:', '作者:', '作者主页地址:', '申入学年度:', '入学学期:', '专业:', '具体项目名称:', '学位:',
                 '全奖/自费:', '提交时间:', '申请结果:', '学校名称:', '通知时间:', '本科学校名称:', '本科学校档次:',
                 '本科专业:', '本科成绩和算法，排名:', '研究生学校名称:', '研究生学校档次:', '研究生专业:', '研究生成绩和算法，排名:',
-                'T单项和总分:', 'G单项和总分:', '背景的其他说明（如牛推等）:', '结果学校国家、地区:', '查到status的方式:', '备注:']
+                'T单项和总分:', 'G单项和总分:', '背景的其他说明（如牛推等）:', '个人其他信息:', '结果学校国家、地区:', '查到status的方式:', '备注:']
     wb = xlwt.Workbook()
     sheet1 = wb.add_sheet('Sheet 1')
     for i in range(len(new_line)):
@@ -164,8 +170,8 @@ def write_csv_append(filename, new_line):
 
 def main():
     cur_page = 0
-    next_page = 1
-    max_page = 1
+    next_page = cur_page + 1
+    max_page = 65535
     create_csv(filename)
     while cur_page < max_page:
         page = get_page_data(dir_url + '&page=' + str(next_page))
@@ -176,7 +182,11 @@ def main():
             apply_info = get_apply_data(post[1])
             ans = (post + apply_info)
             write_csv_append(filename, ans)
+            time.sleep(1)
         print('*INFO: Append new page. CurPage:' + str(cur_page))
+        time.sleep(5)
+    print('************************************************************')
+    print('*INFO: Web Crawler has done crawling. CurPage:' + str(cur_page), 'MaxPage:' + str(max_page))
 
 
 if __name__ == '__main__':
