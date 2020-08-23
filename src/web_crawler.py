@@ -1,12 +1,15 @@
+import re
 import requests
 from bs4 import BeautifulSoup as bs
-import csv
-import time
-import re
+import xlrd
+import xlwt
+from xlutils.copy import copy
 
-cookie = 'study_postinvite_radio=1314; crisp-client%2Fsession%2F327214ac-6a2a-4c15-9e06-98c552cd5814=session_38ebc3fc-9d34-4063-8651-9caae550f8ef; 4Oaf_61d6_cookie_hash=ed033daec34b86851baf6a9ed134c1d4; 4Oaf_61d6_lastvisit=1597998145; 4Oaf_61d6_lastact=1598003602%09home.php%09spacecp; 4Oaf_61d6_ulastactivity=1598003601%7C0; 4Oaf_61d6_lastcheckfeed=469652%7C1598001754; 4Oaf_61d6_lip=199.19.110.43%2C1598001754; 4Oaf_61d6_member_login_status=1; 4Oaf_61d6_nofavfid=1; _ga=GA1.2.263377310.1598002218; _gid=GA1.2.1576428336.1598002218; 4Oaf_61d6_atarget=1; 4Oaf_61d6_forum_lastvisit=D_82_1598003601; 4Oaf_61d6_visitedfid=82; 4Oaf_61d6_sendmail=1; 4Oaf_61d6_checkpm=1'
+cookie = '__cfduid=df5c329fc009c62e45bef0cfadcfb3d311598103315; 4Oaf_61d6_saltkey=GkK5JZSW; 4Oaf_61d6_lastvisit=1598099715; 4Oaf_61d6_sendmail=1; _ga=GA1.2.255742118.1598103321; _gid=GA1.2.657097761.1598103321; _gat=1; 4Oaf_61d6_cookie_hash=498d9c937b305355f346c584acd8e0bf; __gads=ID=9bbd87e9f19d5ee1:T=1598103321:S=ALNI_MYd9SMC1CGCUnFroeReshlJkv0daQ; _gat_gtag_UA_167278674_1=1; 4Oaf_61d6_lastact=1598103368%09member.php%09logging; 4Oaf_61d6_ulastactivity=1598103368%7C0; 4Oaf_61d6_auth=1edbCNcMM8nx%2BthjxqKMBwDPazTRd0Ns%2BcZU5XsoA5nl8NIhzGyL%2BJ5w08wb4voZBfgLXm1W9lLtiC1qMMMQVcQr2Vk; 4Oaf_61d6_lastcheckfeed=469652%7C1598103368; 4Oaf_61d6_checkfollow=1; 4Oaf_61d6_lip=199.19.110.43%2C1598103368'
 user_agent = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36'
-base_url = 'https://www.1point3acres.com/bbs/forum.php?mod=forumdisplay&fid=82&sortid=164&searchoption[3001][value]=1&searchoption[3001][type]=radio&searchoption[3002][value]=1&searchoption[3002][type]=radio&sortid=164&filter=sortid&orderby=dateline'
+dir_url = 'https://www.1point3acres.com/bbs/forum.php?mod=forumdisplay&fid=82&sortid=164&searchoption[3001][value]=1&searchoption[3001][type]=radio&searchoption[3002][value]=1&searchoption[3002][type]=radio&sortid=164&filter=sortid&orderby=dateline'
+base_url = 'https://www.1point3acres.com/bbs/'
+filename = '../data/ans.csv'
 
 
 # login with cookies
@@ -14,7 +17,8 @@ def login(url):
     headers = {
         'User-Agent': user_agent,
         # How to get cookies?
-        # Login, goto the page you want to use and run 'document.cookie' in console
+        # Chrome: F12 and goto 'Network' page, login and check the Request Header in Name='bbs/', you can get cookie in Request Header section
+        # Firefox: F12 and goto 'Network' page, login and check cookie page from name='bbs/', copy all cookies. You need to reformat it first from lots of 'xx:"yy"' to 'xx=yy; xxx=yyy'
         'Cookie': cookie,
     }
     session = requests.Session()
@@ -35,18 +39,14 @@ def get_html_info(url):
 
 def get_cur_page(pager):
     cur_page_data = pager.find('strong')
-    cur_page = ''
-    for page in cur_page_data:
-        cur_page = page
+    cur_page = "".join(cur_page_data.contents)
     return cur_page
 
 
 def get_max_page(pager):
     max_page_data = pager.find('a', class_='last')
-    max_page = ''
-    for page in max_page_data:
-        page = page.replace('... ', '')
-        max_page = page
+    max_page = "".join(max_page_data.contents)
+    max_page = max_page.replace('... ', '')
     return max_page
 
 
@@ -55,7 +55,27 @@ def get_pager(soup):
     cur_page = get_cur_page(pager)
     next_page = str(int(cur_page) + 1)
     max_page = get_max_page(pager)
-    return [cur_page, next_page, max_page]
+    page_info = [['当前页', '下一页', '最大页'], [cur_page, next_page, max_page]]
+    return page_info
+
+
+def get_posts(soup):
+    posts_data = soup.find_all('tbody', id=re.compile('^normalthread_'))
+    posts_info = [['标题', '帖子地址', '作者', '作者主页地址']]
+    for post in posts_data:
+        post_data = post.find('a', class_='s xst', href=True)
+        post_title = "".join(post_data.contents)
+        post_url = base_url + post_data['href']
+        post_author = post.find('cite')
+        if post_author.find('a', href=True) is None:
+            post_author_name = '地里的匿名用户'
+            post_author_url = ''
+        else:
+            post_author = post_author.find('a', href=True)
+            post_author_name = "".join(post_author.contents)
+            post_author_url = base_url + post_author['href']
+        posts_info.append([post_title, post_url, post_author_name, post_author_url])
+    return posts_info
 
 
 def get_page_data(url):
@@ -63,11 +83,100 @@ def get_page_data(url):
     if isinstance(raw_html_info, str):
         soup = bs(raw_html_info, 'html.parser')
         pager = get_pager(soup)
+        posts = get_posts(soup)
+        return pager, posts
+
+
+def get_index(apply_info, th):
+    return apply_info.index(th)
+
+
+def get_apply_data(post_url):
+    raw_html_info = get_html_info(post_url)
+    if isinstance(raw_html_info, str):
+        soup = bs(raw_html_info, 'html.parser')
+        apply_table = soup.find('table', class_='cgtl mbm')
+        apply_table = apply_table.find('tbody')
+        apply_table = apply_table.find_all('tr')
+        apply_info = ['申入学年度:', '入学学期:', '专业:', '具体项目名称:', '学位:', '全奖/自费:', '提交时间:', '申请结果:',
+                      '学校名称:', '通知时间:', '本科学校名称:', '本科学校档次:', '本科专业:', '本科成绩和算法，排名:',
+                      '研究生学校名称:', '研究生学校档次:', '研究生专业:', '研究生成绩和算法，排名:', 'T单项和总分:',
+                      'G单项和总分:', '背景的其他说明（如牛推等）:', '结果学校国家、地区:', '查到status的方式:', '备注:']
+        apply_line = ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
+        mark = soup.find('td', class_='t_f')
+        mark = "".join(mark.strings)
+        mark = mark.strip()
+        start = mark.find('\n\n')
+        end = mark.find('\n\n', start + 2)
+        mark = mark[start + 2:end]
+        index = get_index(apply_info, '备注:')
+        apply_line[index] = mark
+        for tr in apply_table:
+            th = tr.find('th')
+            th = "".join(th.contents)
+            index = get_index(apply_info, th)
+
+            td = tr.find('td')
+            if td.find('a', onclick=True) is None:
+                td = "".join(td.contents)
+                apply_line[index] = td
+            else:
+                td = td.find('a', onclick=True)
+                td = td['onclick']
+                start = td.find('forum.php?')
+                end = td.find(', ')
+                td = td[start:end - 1]
+                td = base_url + td
+                raw_html_info = get_html_info(td)
+                if isinstance(raw_html_info, str):
+                    soup = bs(raw_html_info, 'html.parser')
+                    td = soup.find('root')
+                    td = "".join(td.contents)
+                    apply_line[index] = td
+        return apply_line
+
+
+def create_csv(filename):
+    new_line = ['标题:', '帖子地址:', '作者:', '作者主页地址:', '申入学年度:', '入学学期:', '专业:', '具体项目名称:', '学位:',
+                '全奖/自费:', '提交时间:', '申请结果:', '学校名称:', '通知时间:', '本科学校名称:', '本科学校档次:',
+                '本科专业:', '本科成绩和算法，排名:', '研究生学校名称:', '研究生学校档次:', '研究生专业:', '研究生成绩和算法，排名:',
+                'T单项和总分:', 'G单项和总分:', '背景的其他说明（如牛推等）:', '结果学校国家、地区:', '查到status的方式:', '备注:']
+    wb = xlwt.Workbook()
+    sheet1 = wb.add_sheet('Sheet 1')
+    for i in range(len(new_line)):
+        sheet1.write(0, i, new_line[i])
+    wb.save(filename)
+    print('*INFO: CSV file has created.')
+
+
+def write_csv_append(filename, new_line):
+    workbook = xlrd.open_workbook(filename)
+    sheets = workbook.sheet_names()
+    worksheet = workbook.sheet_by_name(sheets[0])
+    exist_rows = worksheet.nrows
+    new_workbook = copy(workbook)
+    new_worksheet = new_workbook.get_sheet(0)
+    for i in range(len(new_line)):
+        new_worksheet.write(exist_rows, i, new_line[i])
+    new_workbook.save(filename)
+    print('INFO: Append new line. CurLine:' + str(exist_rows))
 
 
 def main():
-    url = base_url + '&page=1'
-    get_page_data(url)
+    cur_page = 0
+    next_page = 1
+    max_page = 1
+    create_csv(filename)
+    while cur_page < max_page:
+        page = get_page_data(dir_url + '&page=' + str(next_page))
+        cur_page = int(page[0][1][0])
+        next_page = int(page[0][1][1])
+        max_page = int(page[0][1][2])
+        for post in page[1][1:]:
+            apply_info = get_apply_data(post[1])
+            ans = (post + apply_info)
+            write_csv_append(filename, ans)
+        print('*INFO: Append new page. CurPage:' + str(cur_page))
 
 
 if __name__ == '__main__':
