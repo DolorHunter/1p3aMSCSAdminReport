@@ -36,3 +36,7 @@ $ pip install regex, requests, BeautifulSoup4, xlutils
 ## 警告
 
 爬虫可能会触发网站的 bot 检测. 如果不幸触发请手动进入 https://www.1point3acres.com/bbs/ 进行 reCAPTCHA验证. 在未使用 sleep 的情况下大约爬取一两百个帖子会触发一次, 使用了 sleep 后似乎也不会有所提升? 因此默认 sleep 参数为 False.
+
+### Update
+
+号被封了.
