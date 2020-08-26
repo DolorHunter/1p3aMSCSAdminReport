@@ -25,7 +25,7 @@ $ pip install regex, requests, BeautifulSoup4, xlutils
 
 - 怎么获得Cookie:
   - Chrome: F12进入网络(Network)分页, 重新登录论坛, 查看名为 bbs/ 的请求的请求头(Request Header), 请求头内的 Cookie 即为你的 cookie, 替换全局变量 cookie 即可.
-  - Firefox: F12进入网络(Network)分页, 重新登录论坛, 查看名为 bbs/ 的请求, 选择请求头(Request Header)分页, 复制所有的 Cookie 并调整格式. **xx:"yy" xxx:"yyy"** => **xx=yy; xxx=yyy**
+  - Firefox: F12进入网络(Network)分页, 重新登录论坛, 查看名为 bbs/ 的请求, 选择请求头(Request Header)分页, 请求头内的 Cookie 即为你的 cookie, 替换全局变量 cookie 即可.
 
 - 怎么获得 dir_url:
   - 进入 [论坛›留学申请›录取汇报：研究生](https://www.1point3acres.com/bbs/forum-82-1.html)
